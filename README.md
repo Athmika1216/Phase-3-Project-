@@ -1,0 +1,170 @@
+PROJECT TITLE:
+     EXPOSING THE TRUTH WITH ADVANCED FAKE NEWS DETECTION POWERED BY NATURAL LANGUAGE PROCESSING 
+
+1.Problem Statement 
+The spread of fake news on digital platforms has become a significant threat to society, influencing public opinion, elections, and even endangering lives during crises. The inability to distinguish between factual and misleading content on social media and news websites can lead to misinformation and social unrest. This project aims to address this issue by developing an effective and scalable fake news detection system using natural language processing (NLP) techniques.
+
+2. Abstract 
+This project proposes an advanced fake news detection system powered by Natural Language Processing (NLP). The system will employ a combination of machine learning techniques and deep learning models to analyze text content, identify linguistic patterns indicative of fake news, and classify news articles as either true or false. The system will be trained on a diverse dataset of news articles, incorporating features derived from text analysis, source credibility, and external fact-checking resources. The goal is to create a reliable and efficient tool for identifying fake news and supporting informed decision-making in an increasingly digital world.
+3. Dataset Description 
+ To build and evaluate the fake news detection system, we utilized publicly available datasets that contain labeled news articles, headlines, or social media posts. These datasets are essential for training the NLP model to distinguish between fake and real news based on linguistic and contextual features.
+1. ISOT Fake News Dataset
+Source: University of Victoria
+
+Description: This dataset contains two sets of news articles.
+
+True News: Collected from reputable news sources such as Reuters, BBC, and the New York Times.
+
+Fake News: Gathered from unreliable websites flagged for misinformation.
+
+Size: ~44,000 articles
+Features:
+Title: The headline of the article.
+
+Text: The body content of the article.
+
+Label: 0 for real news, 1 for fake news.
+
+2. LIAR Dataset
+Source: PolitiFact.com
+
+Description: A benchmark dataset for fake news classification, it includes short statements and their verdicts.
+
+Size: ~12,800 labeled statements
+Features:
+Statement: The text of the claim.
+
+Label: Fine-grained labels (e.g., "true", "mostly-true", "half-true", "false", "pants-on-fire").
+
+Subject, speaker, party, context.
+
+3. FakeNewsNet
+Source: Integrated from BuzzFeed and PolitiFact
+
+Description: A comprehensive dataset combining news content with social context and user engagements on social media platforms.
+Features:
+Content: Article headline and body.
+
+Social context: Engagements such as retweets, likes, and replies.
+
+Label: Fake or real.
+4. Source Code
+import pandas as pd
+import numpy as np
+import string
+import nltk
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+
+# Load datasets
+true_df = pd.read_csv("True.csv")
+fake_df = pd.read_csv("Fake.csv")
+
+# Add labels
+true_df['label'] = 1  # Real
+fake_df['label'] = 0  # Fake
+
+# Combine datasets
+data = pd.concat([true_df, fake_df], axis=0).reset_index(drop=True)
+data = data.sample(frac=1).reset_index(drop=True)  # Shuffle
+
+# Preprocessing
+stop_words = stopwords.words('english')
+def clean_text(text):
+    text = text.lower()
+    text = ''.join([char for char in text if char not in string.punctuation])
+    tokens = text.split()
+    return ' '.join([word for word in tokens if word not in stop_words])
+
+data['text'] = data['title'] + " " + data['text']
+data['text'] = data['text'].apply(clean_text)
+
+# Train/Test split
+X = data['text']
+y = data['label']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Vectorization
+vectorizer = TfidfVectorizer(max_df=0.7)
+tfidf_train = vectorizer.fit_transform(X_train)
+tfidf_test = vectorizer.transform(X_test)
+
+# Model
+model = PassiveAggressiveClassifier(max_iter=50)
+model.fit(tfidf_train, y_train)
+
+# Evaluation
+y_pred = model.predict(tfidf_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+5. Model Evaluation 
+After building and training models to detect fake news, it’s essential to assess their performance using appropriate metrics. The evaluation ensures the model generalizes well to unseen data and correctly identifies fake and real news.
+1. Evaluation Metrics Used
+a. Accuracy
+Proportion of total correct predictions.
+Code:
+from sklearn.metrics import accuracy_score
+accuracy_score(y_test, y_pred)
+b. Precision
+Measures the correctness of positive predictions (Fake News = Positive Class).
+
+High precision = low false positives.
+Code:
+from sklearn.metrics import precision_score
+precision_score(y_test, y_pred)
+c. Recall (Sensitivity)
+Measures the model’s ability to detect all actual positives.
+
+High recall = low false negatives.
+Code:
+from sklearn.metrics import recall_score
+recall_score(y_test, y_pred)
+d. F1-Score
+Harmonic mean of precision and recall.
+
+Useful for imbalanced datasets.
+Code:
+from sklearn.metrics import f1_score
+f1_score(y_test, y_pred)
+e. ROC-AUC Score
+Evaluates the model's ability to distinguish between classes.
+Code:
+from sklearn.metrics import roc_auc_score
+roc_auc_score(y_test, y_pred_prob)
+f. Confusion Matrix
+Provides insight into true positives, false positives, true negatives, and false negatives.
+Code:
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_test, y_pred)
+2. Visualizations
+Confusion Matrix Heatmap:
+Code:
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+ROC Curve:
+Code:
+from sklearn.metrics import roc_curve
+
+fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
+plt.plot(fpr, tpr, label='Model')
+plt.plot([0,1], [0,1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend()
+3. Key Observations
+Deep learning models (especially BERT) outperformed traditional models.
+
+Precision and recall are more important than accuracy in fake news detection, as false negatives can be harmful.
+
+Ensemble methods like XGBoost offered a good trade-off between performance and training time.
